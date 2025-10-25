@@ -330,10 +330,12 @@ export default function TradingDashboard() {
                         <tr key={post.id} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-4 text-sm max-w-md truncate">{post.content}</td>
                           <td className="py-3 px-4 text-sm font-medium">{post.stock_ticker}</td>
-                          <td className="py-3 px-4 text-sm text-right">{post.shares_quantity?.toLocaleString()}</td>
-                          <td className="py-3 px-4 text-sm text-right">${signal?.current_price?.toFixed(4) || '--'}</td>
+                          <td className="py-3 px-4 text-sm text-right">{post.shares_quantity?.toLocaleString() || '--'}</td>
+                          <td className="py-3 px-4 text-sm text-right">
+                            {signal?.current_price ? `$${Number(signal.current_price).toFixed(4)}` : '--'}
+                          </td>
                           <td className="py-3 px-4 text-sm text-right font-semibold">
-                            ${signal?.total_value?.toLocaleString() || '--'}
+                            {signal?.total_value ? `$${Number(signal.total_value).toLocaleString()}` : '--'}
                           </td>
                           <td className="py-3 px-4 text-center">
                             {trade ? (
@@ -394,10 +396,10 @@ export default function TradingDashboard() {
                             {trade.action}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4 text-sm text-right">{trade.quantity.toLocaleString()}</td>
-                        <td className="py-3 px-4 text-sm text-right">${trade.price.toFixed(4)}</td>
+                        <td className="py-3 px-4 text-sm text-right">{Number(trade.quantity).toLocaleString()}</td>
+                        <td className="py-3 px-4 text-sm text-right">${Number(trade.price).toFixed(4)}</td>
                         <td className="py-3 px-4 text-sm text-right font-semibold">
-                          ${(trade.quantity * trade.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ${(Number(trade.quantity) * Number(trade.price)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="py-3 px-4 text-center">
                           <Badge variant={trade.status === 'FILLED' ? 'default' : 'secondary'}>
