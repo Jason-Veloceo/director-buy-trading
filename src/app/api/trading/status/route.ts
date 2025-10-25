@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TradingService } from '@/lib/trading/tradingService';
-
-let tradingService: TradingService | null = null;
+import TradingServiceSingleton from '@/lib/trading/tradingServiceSingleton';
 
 export async function GET(request: NextRequest) {
   try {
-    if (!tradingService) {
-      tradingService = new TradingService();
-      await tradingService.initialize();
-    }
-
+    const tradingService = await TradingServiceSingleton.getInstance();
     const status = await tradingService.getSystemStatus();
     
     return NextResponse.json({
