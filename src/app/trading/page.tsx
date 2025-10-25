@@ -192,7 +192,7 @@ export default function TradingDashboard() {
             <Button 
               onClick={handleStart} 
               disabled={loading || status?.isRunning}
-              className="bg-black hover:bg-gray-800"
+              className="bg-black hover:bg-gray-800 text-white"
             >
               <Activity className="h-4 w-4 mr-2" />
               Start Monitoring
@@ -201,6 +201,7 @@ export default function TradingDashboard() {
               onClick={handleStop} 
               disabled={loading || !status?.isRunning}
               variant="outline"
+              className="border-gray-300 hover:bg-gray-100"
             >
               Stop Monitoring
             </Button>
