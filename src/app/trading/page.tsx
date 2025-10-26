@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Activity, Database, Clock, DollarSign, TrendingUp, Percent } from 'lucide-react';
+import { Activity, Database, Clock, DollarSign, TrendingUp, Percent, TestTube } from 'lucide-react';
 
 interface Trade {
   id: number;
@@ -57,7 +57,9 @@ export default function TradingDashboard() {
   const [posts, setPosts] = useState<DirectorBuyPost[]>([]);
   const [signals, setSignals] = useState<TradeSignal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<any>(null);
 
   const fetchStatus = async () => {
     try {
@@ -144,6 +146,31 @@ export default function TradingDashboard() {
     }
   };
 
+  const handleTestTrade = async (count: number = 5) => {
+    setTestLoading(true);
+    setError(null);
+    setTestResult(null);
+    try {
+      const response = await fetch('/api/trading/test-trade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setTestResult(data.data);
+        fetchTrades();
+        fetchPosts();
+      } else {
+        setError(data.error || 'Failed to execute test trade');
+      }
+    } catch (err) {
+      setError('Failed to execute test trade');
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString('en-AU', { 
       hour: '2-digit', 
@@ -205,12 +232,46 @@ export default function TradingDashboard() {
             >
               Stop Monitoring
             </Button>
+            <Button 
+              onClick={() => handleTestTrade(5)} 
+              disabled={testLoading}
+              variant="outline"
+              className="border-blue-300 text-blue-600 hover:bg-blue-50"
+            >
+              <TestTube className="h-4 w-4 mr-2" />
+              {testLoading ? 'Testing...' : 'Test Trade (5 posts)'}
+            </Button>
           </div>
         </div>
 
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {testResult && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <AlertDescription>
+              <div className="font-semibold mb-2">✅ Test Trade Completed</div>
+              <div className="grid grid-cols-4 gap-4 text-sm">
+                <div>Posts Scraped: <strong>{testResult.postsScraped}</strong></div>
+                <div>Posts Processed: <strong>{testResult.postsProcessed}</strong></div>
+                <div>Signals Generated: <strong>{testResult.signalsGenerated}</strong></div>
+                <div>Trades Placed: <strong>{testResult.tradesPlaced}</strong></div>
+              </div>
+              {testResult.results && testResult.results.length > 0 && (
+                <div className="mt-3">
+                  <div className="font-medium mb-1">Results:</div>
+                  {testResult.results.map((result: any, idx: number) => (
+                    <div key={idx} className="text-xs py-1">
+                      {result.ticker}: {result.status}
+                      {result.orderId && ` (Order ID: ${result.orderId})`}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </AlertDescription>
           </Alert>
         )}
 

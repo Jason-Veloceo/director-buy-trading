@@ -229,4 +229,109 @@ export class TradingService {
       return [];
     }
   }
+
+  async testTrade(count: number = 5): Promise<any> {
+    try {
+      console.log(`🧪 Running test trade with ${count} posts...`);
+      
+      // Scrape director buys from X
+      console.log('📱 Scraping X for director buy posts...');
+      const directorBuys = await this.xScraper.scrapeDirectorBuys();
+      
+      if (directorBuys.length === 0) {
+        return {
+          message: 'No director buy posts found',
+          postsScraped: 0,
+          signalsGenerated: 0,
+          tradesPlaced: 0
+        };
+      }
+
+      console.log(`✅ Found ${directorBuys.length} director buy posts`);
+      
+      // Process up to 'count' posts
+      const postsToProcess = directorBuys.slice(0, count);
+      let signalsGenerated = 0;
+      let tradesPlaced = 0;
+      const results = [];
+
+      for (const post of postsToProcess) {
+        try {
+          console.log(`\n📊 Processing: ${post.stockTicker} - ${post.sharesQuantity} shares`);
+          
+          // Generate trade signal
+          const signal = await this.tradingEngine.evaluateDirectorBuy(post);
+          
+          if (signal && signal.meetsThreshold) {
+            signalsGenerated++;
+            console.log(`✅ Signal generated for ${post.stockTicker}`);
+            console.log(`   Total Value: $${signal.totalValue.toFixed(2)}`);
+            console.log(`   Position Size: ${signal.positionSize} shares ($${signal.positionValue.toFixed(2)})`);
+            
+            // Check if we're in market hours (skip for test mode)
+            // Place the trade
+            try {
+              const orderId = await this.ibClient.placeBuyOrder(
+                post.stockTicker,
+                signal.positionSize,
+                signal.entryPrice
+              );
+              
+              tradesPlaced++;
+              console.log(`✅ Order placed: ${orderId}`);
+              
+              results.push({
+                ticker: post.stockTicker,
+                shares: signal.positionSize,
+                price: signal.entryPrice,
+                value: signal.positionValue,
+                orderId,
+                status: 'Order placed successfully'
+              });
+            } catch (orderError) {
+              console.error(`❌ Failed to place order for ${post.stockTicker}:`, orderError);
+              results.push({
+                ticker: post.stockTicker,
+                shares: signal.positionSize,
+                price: signal.entryPrice,
+                value: signal.positionValue,
+                orderId: null,
+                status: `Order failed: ${orderError instanceof Error ? orderError.message : 'Unknown error'}`
+              });
+            }
+          } else {
+            console.log(`⏭️ Skipped ${post.stockTicker} - does not meet threshold`);
+            results.push({
+              ticker: post.stockTicker,
+              shares: post.sharesQuantity,
+              status: 'Below threshold'
+            });
+          }
+        } catch (error) {
+          console.error(`❌ Error processing ${post.stockTicker}:`, error);
+          results.push({
+            ticker: post.stockTicker,
+            status: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          });
+        }
+      }
+
+      console.log('\n📊 Test Trade Summary:');
+      console.log(`   Posts Scraped: ${directorBuys.length}`);
+      console.log(`   Posts Processed: ${postsToProcess.length}`);
+      console.log(`   Signals Generated: ${signalsGenerated}`);
+      console.log(`   Trades Placed: ${tradesPlaced}`);
+
+      return {
+        postsScraped: directorBuys.length,
+        postsProcessed: postsToProcess.length,
+        signalsGenerated,
+        tradesPlaced,
+        results
+      };
+    } catch (error) {
+      console.error('❌ Test trade failed:', error);
+      throw error;
+    }
+  }
 }
