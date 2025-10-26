@@ -234,6 +234,14 @@ export class TradingService {
     try {
       console.log(`🧪 Running test trade with ${count} posts...`);
       
+      // Check if monitoring is running
+      if (this.isRunning) {
+        console.log('⚠️ Monitoring is currently running, stopping it temporarily...');
+        await this.stopMonitoring();
+        // Wait a moment for the browser to be released
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
       // Scrape director buys from X
       console.log('📱 Scraping X for director buy posts...');
       const directorBuys = await this.xScraper.scrapeDirectorBuys();
