@@ -98,7 +98,7 @@ export class XScraper {
     }
   }
 
-  async scrapeDirectorBuys(): Promise<DirectorBuyPost[]> {
+  async scrapeDirectorBuys(skipDuplicateCheck: boolean = false): Promise<DirectorBuyPost[]> {
     if (!this.page) {
       throw new Error('Scraper not initialized');
     }
@@ -148,7 +148,7 @@ export class XScraper {
         try {
           const postData = await this.extractPostData(tweet);
           if (postData && this.isDirectorBuyPost(postData.content)) {
-            const processedPost = await this.processDirectorBuyPost(postData);
+            const processedPost = await this.processDirectorBuyPost(postData, skipDuplicateCheck);
             if (processedPost) {
               directorBuys.push(processedPost);
             }
@@ -208,7 +208,7 @@ export class XScraper {
     return directorBuyPatterns.some(pattern => pattern.test(content));
   }
 
-  private async processDirectorBuyPost(postData: Partial<DirectorBuyPost>): Promise<DirectorBuyPost | null> {
+  private async processDirectorBuyPost(postData: Partial<DirectorBuyPost>, skipDuplicateCheck: boolean = false): Promise<DirectorBuyPost | null> {
     if (!postData.content || !postData.postUrl) return null;
 
     try {
@@ -217,15 +217,17 @@ export class XScraper {
       
       if (!parsed) return null;
 
-      // Check if we've already processed this post
-      const existingPost = await query(
-        'SELECT id FROM x_posts WHERE post_id = $1',
-        [parsed.postId]
-      );
+      // Check if we've already processed this post (unless skipping)
+      if (!skipDuplicateCheck) {
+        const existingPost = await query(
+          'SELECT id FROM x_posts WHERE post_id = $1',
+          [parsed.postId]
+        );
 
-      if (existingPost.rows.length > 0) {
-        console.log(`Post ${parsed.postId} already processed`);
-        return null;
+        if (existingPost.rows.length > 0) {
+          console.log(`Post ${parsed.postId} already processed`);
+          return null;
+        }
       }
 
       // Save to database

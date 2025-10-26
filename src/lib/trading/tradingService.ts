@@ -242,9 +242,9 @@ export class TradingService {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
       
-      // Scrape director buys from X
+      // Scrape director buys from X (skip duplicate check for testing)
       console.log('📱 Scraping X for director buy posts...');
-      const directorBuys = await this.xScraper.scrapeDirectorBuys();
+      const directorBuys = await this.xScraper.scrapeDirectorBuys(true);
       
       if (directorBuys.length === 0) {
         return {
